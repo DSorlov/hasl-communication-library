@@ -12,7 +12,7 @@ setuptools.setup(
     version=version['__version__'],
     author="Daniel Sorlov",
     author_email="daniel@sorlov.com",
-    description="SL Communications Module for HomeAssistant",
+    description="Communications Module for HomeAssistant SL Sensor",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/dsorlov/hasl",
