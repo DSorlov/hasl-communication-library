@@ -1,12 +1,11 @@
-class Life360Error(Exception):
+class HASLError(Exception):
     """Base class for SL exceptions"""
     pass
 
-
-class LoginError(SLError):
+class HASLLoginError(HASLError):
     """Invalid api credentials"""
     pass
 
-class APIQoutaError(SLError):
+class HASLAPIQoutaError(HASLError):
     """API Qouta exceeded"""
     pass
