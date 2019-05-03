@@ -1,11 +1,13 @@
 class HASLError(Exception):
-    """Base class for SL exceptions"""
+    """Base class for SL exceptions."""
     pass
+
 
 class HASLLoginError(HASLError):
-    """Invalid api credentials"""
+    """Invalid api credentials."""
     pass
 
+
 class HASLAPIQoutaError(HASLError):
-    """API Qouta exceeded"""
+    """API Qouta exceeded."""
     pass
