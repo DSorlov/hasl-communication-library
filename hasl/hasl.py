@@ -1,10 +1,5 @@
 import json
-import logging
-import os
-import stat
-
 import requests
-
 from .exceptions import *
 from .version import __version__
 
@@ -13,10 +8,8 @@ _RI4_URL = _BASE_URL + \
            'realtimedeparturesV4.json?key={}&siteid={}&timeWindow={}'
 _SI2_URL = _BASE_URL + 'deviations.json?key={}&siteid={}&lineNumber={}'
 _TL2_URL = _BASE_URL + 'trafficsituation.json?key={}'
-_USER_AGENT = "HASL/"+__version__
-_AUTH_ERRS = (401, 403)
 
-_LOGGER = logging.getLogger(__name__)
+_USER_AGENT = "HASL/"+__version__
 
 
 class haslapi(object):
@@ -24,18 +17,43 @@ class haslapi(object):
     def __init__(self, timeout=None):
         self._timeout = timeout
 
+    def version(self):
+        return __version__
+
     def _get(self, url):
 
-        resp = requests.get(url, headers={"User-agent": _USER_AGENT},
-                            allow_redirects=True, timeout=self._timeout)
+        api_errors = {
+            1001: 'API key is over qouta',
+            1002: 'API key is invalid',
+            }
 
-        if resp.status_code in (401, 403):
-            _LOGGER.error("HASL: Failed fetching data for '%s'"
-                          "(HTTP Status_code = %d)", url,
-                          resp.status_code)
+        try:
+            resp = requests.get(url, headers={"User-agent": _USER_AGENT},
+                                allow_redirects=True, timeout=self._timeout)
+        except Exception as e:
+            raise HASL_HTTP_Error(997, "A HTTP error occured", repr(e))
 
-        resp.raise_for_status()
-        return resp.json()
+        try:
+            jsonResponse = resp.json()
+        except Exception as e:
+            raise HASL_API_Error(998, "A parsing error occured", repr(e))
+
+        if not jsonResponse:
+            raise HASL_Error(999, "Internal error", "jsonResponse is empty")
+
+        if jsonResponse['StatusCode'] == 0:
+            return jsonResponse
+
+        apiErrorText = api_errors.get(jsonResponse['StatusCode'])
+
+        if apiErrorText:
+            raise HASL_API_Error(jsonResponse['StatusCode'],
+                                 apiErrorText,
+                                 jsonResponse['Message'])
+        else:
+            raise HASL_API_Error(jsonResponse['StatusCode'],
+                                 "Unknown API-response code encountered",
+                                 jsonResponse['Message'])
 
 
 class ri4api(haslapi):
