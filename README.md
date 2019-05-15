@@ -1,4 +1,4 @@
-Home Assistant SL Sensor (HASL) Cards
+Home Assistant SL Sensor (HASL) Communication Library
 ===============================
 
 This module provides the low level communications functionality used by the [Home Assistant SL Sensor](https://github.com/DSorlov/hasl-platform/blob/hasl/README.md).
