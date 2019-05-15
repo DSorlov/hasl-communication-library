@@ -5,4 +5,4 @@ This module provides the low level communications functionality used by the [Hom
 
 >__NOTE__: This code is really not supported for use outside of Home Assistant, even if that should be possible in it self.
 
-If you're reading this on the project's github page, the package is available on PyPI [here](https://pypi.org/project/hasl/).)
+If you're reading this on the project's github page, the package is available on PyPI [here](https://pypi.org/project/hasl/).
