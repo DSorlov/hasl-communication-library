@@ -1,15 +1,55 @@
 import json
 import requests
+import time
 from .exceptions import *
 from .version import __version__
 
-_BASE_URL = 'https://api.sl.se/api2/'
-_RI4_URL = _BASE_URL + \
-           'realtimedeparturesV4.json?key={}&siteid={}&timeWindow={}'
-_SI2_URL = _BASE_URL + 'deviations.json?key={}&siteid={}&lineNumber={}'
-_TL2_URL = _BASE_URL + 'trafficsituation.json?key={}'
 
-_USER_AGENT = "HASL/"+__version__
+FORDONSPOSITION_URL = 'https://api.sl.se/fordonspositioner/GetData?' \
+                      'type={}&pp=false&cacheControl={}'
+
+TRAFIKLAB_URL = 'https://api.sl.se/api2/'
+RI4_URL = TRAFIKLAB_URL + \
+          'realtimedeparturesV4.json?key={}&siteid={}&timeWindow={}'
+SI2_URL = TRAFIKLAB_URL + 'deviations.json?key={}&siteid={}&lineNumber={}'
+TL2_URL = TRAFIKLAB_URL + 'trafficsituation.json?key={}'
+
+
+USER_AGENT = "pyHASL/"+__version__
+
+
+class fpapi(object):
+    def __init__(self, timeout=None):
+        self._timeout = timeout
+
+    def version(self):
+        return __version__
+
+    def request(self, type):
+
+        if type not in ('PT', 'RB', 'TVB', 'SB', 'LB',
+                        'SpvC', 'TB1', 'TB2', 'TB3'):
+            raise HASL_Error(-1, "Traffic type is not valid",
+                                 "Must be one of 'PT','RB','TVB','SB',"
+                                 "'LB','SpvC','TB1','TB2','TB3'")
+
+        try:
+            request = requests.get(FORDONSPOSITION_URL.format(type,
+                                                              time.time()),
+                                   headers={"User-agent": USER_AGENT},
+                                   allow_redirects=True,
+                                   timeout=self._timeout)
+        except Exception as e:
+            raise HASL_HTTP_Error(997, "A HTTP error occured", repr(e))
+
+        response = json.loads(request.json())
+
+        result = []
+
+        for trip in response['Trips']:
+            result.append(trip)
+
+        return result
 
 
 class haslapi(object):
@@ -28,8 +68,10 @@ class haslapi(object):
             }
 
         try:
-            resp = requests.get(url, headers={"User-agent": _USER_AGENT},
-                                allow_redirects=True, timeout=self._timeout)
+            resp = requests.get(url,
+                                headers={"User-agent": USER_AGENT},
+                                allow_redirects=True,
+                                timeout=self._timeout)
         except Exception as e:
             raise HASL_HTTP_Error(997, "A HTTP error occured", repr(e))
 
@@ -65,8 +107,8 @@ class ri4api(haslapi):
         self._window = window
 
     def request(self):
-        return self._get(_RI4_URL.format(self._api_token,
-                                         self._siteid, self._window))
+        return self._get(RI4_URL.format(self._api_token,
+                                        self._siteid, self._window))
 
 
 class si2api(haslapi):
@@ -78,8 +120,8 @@ class si2api(haslapi):
         self._lines = lines
 
     def request(self):
-        return self._get(_SI2_URL.format(self._api_token,
-                                         self._siteid, self._lines))
+        return self._get(SI2_URL.format(self._api_token,
+                                        self._siteid, self._lines))
 
 
 class tl2api(haslapi):
@@ -88,4 +130,4 @@ class tl2api(haslapi):
         self._api_token = api_token
 
     def request(self):
-        return self._get(_TL2_URL.format(self._api_token))
+        return self._get(TL2_URL.format(self._api_token))
