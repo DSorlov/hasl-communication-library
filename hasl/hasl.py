@@ -9,11 +9,16 @@ FORDONSPOSITION_URL = 'https://api.sl.se/fordonspositioner/GetData?' \
                       'type={}&pp=false&cacheControl={}'
 
 TRAFIKLAB_URL = 'https://api.sl.se/api2/'
-RI4_URL = TRAFIKLAB_URL + \
-          'realtimedeparturesV4.json?key={}&siteid={}&timeWindow={}'
 SI2_URL = TRAFIKLAB_URL + 'deviations.json?key={}&siteid={}&lineNumber={}'
 TL2_URL = TRAFIKLAB_URL + 'trafficsituation.json?key={}'
-
+RI4_URL = TRAFIKLAB_URL + 'realtimedeparturesV4.json?key={}&siteid={}' \
+                          '&timeWindow={}'
+PU1_URL = TRAFIKLAB_URL + 'typeahead.json?key={}&searchstring={}' \
+                          '&stationsonly=False&maxresults=25'
+TP3_URL = TRAFIKLAB_URL + 'TravelplannerV3_1/trip.json?key={}&originExtId={}' \
+                          '&destExtId={}&originCoordLat={}' \
+                          '&originCoordLong={}&destCoordLat={}' \
+                          '&destCoordLong={}'
 
 USER_AGENT = "pyHASL/"+__version__
 
@@ -83,19 +88,50 @@ class haslapi(object):
         if not jsonResponse:
             raise HASL_Error(999, "Internal error", "jsonResponse is empty")
 
-        if jsonResponse['StatusCode'] == 0:
+        if 'StatusCode' in jsonResponse:
+
+            if jsonResponse['StatusCode'] == 0:
+                return jsonResponse
+
+            apiErrorText = api_errors.get(jsonResponse['StatusCode'])
+
+            if apiErrorText:
+                raise HASL_API_Error(jsonResponse['StatusCode'],
+                                     apiErrorText,
+                                     jsonResponse['Message'])
+            else:
+                raise HASL_API_Error(jsonResponse['StatusCode'],
+                                     "Unknown API-response code encountered",
+                                     jsonResponse['Message'])
+
+        elif 'Trip' in jsonResponse:
             return jsonResponse
 
-        apiErrorText = api_errors.get(jsonResponse['StatusCode'])
+        elif 'Sites' in jsonResponse:
+            return jsonResponse
 
-        if apiErrorText:
-            raise HASL_API_Error(jsonResponse['StatusCode'],
-                                 apiErrorText,
-                                 jsonResponse['Message'])
         else:
-            raise HASL_API_Error(jsonResponse['StatusCode'],
-                                 "Unknown API-response code encountered",
-                                 jsonResponse['Message'])
+            raise HASL_Error(-100, "ResponseType is not known")
+
+
+class pu1api(haslapi):
+    def __init__(self, api_token, timeout=None):
+        super().__init__(timeout)
+        self._api_token = api_token
+
+    def request(self, searchstring):
+        return self._get(PU1_URL.format(self._api_token, searchstring))
+
+
+class tp3api(haslapi):
+    def __init__(self, api_token, timeout=None):
+        super().__init__(timeout)
+        self._api_token = api_token
+
+    def request(self, origin, destination, orgLat, orgLong, destLat, destLong):
+        return self._get(TP3_URL.format(self._api_token, origin, destination,
+                                        orgLat, orgLong, destLat, destLong))
+
 
 
 class ri4api(haslapi):
